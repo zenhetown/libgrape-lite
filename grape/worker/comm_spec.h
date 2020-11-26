@@ -98,7 +98,7 @@ class CommSpec {
 
     initLocalInfo();
 
-    fnum_ = worker_num_;
+    fnum_ = worker_num_;  //hank set the worker_num_ as the fragment quantity.
     fid_ = worker_id_;
   }
 
@@ -146,9 +146,9 @@ class CommSpec {
 
     MPI_Get_processor_name(hn, &hn_len);
 
-    char* recv_buf = reinterpret_cast<char*>(calloc(worker_num_, sizeof(hn)));
+    char* recv_buf = reinterpret_cast<char*>(calloc(worker_num_, sizeof(hn)));// hank apply for worker_num's hn sized arrays
     MPI_Allgather(hn, MPI_MAX_PROCESSOR_NAME, MPI_CHAR, recv_buf,
-                  MPI_MAX_PROCESSOR_NAME, MPI_CHAR, comm_);
+                  MPI_MAX_PROCESSOR_NAME, MPI_CHAR, comm_); //hank the comm_ is COMM_WORLD, each process of MPI send out self name, and read all the names from other processes
 
     std::vector<std::string> worker_host_names(worker_num_);
     for (int i = 0; i < worker_num_; ++i) {
@@ -160,7 +160,7 @@ class CommSpec {
 
     local_num_ = 0;
     local_id_ = -1;
-    for (int i = 0; i < worker_num_; ++i) {
+    for (int i = 0; i < worker_num_; ++i) {  // hank, this loop set all the processes on the same host different localid, if 1 host has 4 processes, their localid will be 0,1,2,3 respectively
       if (i == worker_id_) {
         local_id_ = local_num_;
       }
@@ -171,14 +171,14 @@ class CommSpec {
 
     std::sort(worker_host_names.begin(), worker_host_names.end());
     std::map<std::string, int> hostname_to_host_id;
-    for (size_t idx = 0; idx < worker_host_names.size(); ++idx) {
+    for (size_t idx = 0; idx < worker_host_names.size(); ++idx) { //hank, give each host a unique host id
       hostname_to_host_id[worker_host_names[idx]] = idx;
     }
     int color = hostname_to_host_id[worker_host_names[worker_id_]];
     if (local_owner_ && ValidComm(local_comm_)) {
       MPI_Comm_free(&local_comm_);
     }
-    MPI_Comm_split(comm_, color, worker_id_, &local_comm_);
+    MPI_Comm_split(comm_, color, worker_id_, &local_comm_);// hank, same host processes  will form a comm sub domain, the world com can still be used
     local_owner_ = true;
   }
 

@@ -79,14 +79,14 @@ class BasicFragmentLoader<
     vertices_to_frag_.resize(comm_spec_.fnum());
     edges_to_frag_.resize(comm_spec_.fnum());
     for (fid_t fid = 0; fid < comm_spec_.fnum(); ++fid) {
-      int worker_id = comm_spec_.FragToWorker(fid);
+      int worker_id = comm_spec_.FragToWorker(fid);            //hank, map the fragment id to workerid
       vertices_to_frag_[fid].Init(comm_spec_.comm(), vertex_tag);
       vertices_to_frag_[fid].SetDestination(worker_id, fid);
       edges_to_frag_[fid].Init(comm_spec_.comm(), edge_tag);
       edges_to_frag_[fid].SetDestination(worker_id, fid);
       if (worker_id == comm_spec_.worker_id()) {
         vertices_to_frag_[fid].DisableComm();
-        edges_to_frag_[fid].DisableComm();
+        edges_to_frag_[fid].DisableComm();  //hank, above code initialise the mapping from fragment ID to the comm ID of each workers; tells you which woker will process which fragment
       }
     }
 
@@ -131,18 +131,18 @@ class BasicFragmentLoader<
   }
 
   void AddVertex(const oid_t& id, const vdata_t& data) {
-    fid_t fid = partitioner_.GetPartitionId(id);
+    fid_t fid = partitioner_.GetPartitionId(id);//hank, map the oid to the partitionID
     vdata_t ref_data(data);
-    vertices_to_frag_[fid].Emplace(id, ref_data);
+    vertices_to_frag_[fid].Emplace(id, ref_data);//hank, this function will send out all the other workers' data in chunks and will not send self partition's data
   }
 
   void AddEdge(const oid_t& src, const oid_t& dst, const edata_t& data) {
     fid_t src_fid = partitioner_.GetPartitionId(src);
     fid_t dst_fid = partitioner_.GetPartitionId(dst);
     edata_t ref_data(data);
-    edges_to_frag_[src_fid].Emplace(src, dst, ref_data);
+    edges_to_frag_[src_fid].Emplace(src, dst, ref_data);//hank, send the edge data to src vertex's worker
     if (src_fid != dst_fid) {
-      edges_to_frag_[dst_fid].Emplace(src, dst, ref_data);
+      edges_to_frag_[dst_fid].Emplace(src, dst, ref_data);//hank, send the edge data to dst vertex's worker
     }
   }
 
@@ -175,7 +175,7 @@ class BasicFragmentLoader<
                            const std::string& deserialization_prefix) {
     auto io_adaptor =
         std::unique_ptr<IOADAPTOR_T>(new IOADAPTOR_T(deserialization_prefix));
-    if (io_adaptor->IsExist()) {
+    if (io_adaptor->IsExist()) {// hank, means there has been saved seriealised fragments
       vm_ptr_->template Deserialize<IOADAPTOR_T>(deserialization_prefix);
       fragment = std::shared_ptr<fragment_t>(new fragment_t(vm_ptr_));
       fragment->template Deserialize<IOADAPTOR_T>(deserialization_prefix,
@@ -196,7 +196,7 @@ class BasicFragmentLoader<
     recv_thread_running_ = false;
 
     MPI_Barrier(comm_spec_.comm());
-
+    //hank, following codes combine the local fid buffer with those received from other workers
     got_vertices_id_.emplace_back(
         std::move(vertices_to_frag_[comm_spec_.fid()].Buffer0()));
     got_vertices_data_.emplace_back(std::move(std::vector<vdata_t>(
@@ -213,13 +213,13 @@ class BasicFragmentLoader<
     VLOG(1) << "[worker-" << comm_spec_.worker_id()
             << "]: finished construct vertex map and process vertices";
 
-    processEdges();
+    processEdges();//hank, move the gotxxxx, to the processed vertices&edges
 
     VLOG(1) << "[worker-" << comm_spec_.worker_id()
             << "]: finished process edges";
 
     fragment = std::shared_ptr<fragment_t>(new fragment_t(vm_ptr_));
-    fragment->Init(comm_spec_.fid(), processed_vertices_, processed_edges_);
+    fragment->Init(comm_spec_.fid(), processed_vertices_, processed_edges_);//hank, construct the fragment
 
     initMirrorInfo(fragment);
     initOuterVertexData(fragment);

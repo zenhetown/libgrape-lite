@@ -54,7 +54,7 @@ inline ParallelEngineSpec MultiProcessSpec(const CommSpec& comm_spec,
   ParallelEngineSpec spec;
   uint32_t total_thread_num = std::thread::hardware_concurrency();
   uint32_t each_process_thread_num =
-      (total_thread_num + comm_spec.local_num() - 1) / comm_spec.local_num();
+      (total_thread_num + comm_spec.local_num() - 1) / comm_spec.local_num(); //hank, each process can have about total thread divided by local com process num
   spec.thread_num = each_process_thread_num;
   spec.affinity = affinity;
   spec.cpu_list.clear();

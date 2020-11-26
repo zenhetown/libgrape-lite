@@ -310,7 +310,7 @@ class AppendOnlyEdgecutFragment
   void Init(fid_t fid, std::vector<internal_vertex_t>& vertices,
             std::vector<edge_t>& edges) override {
     fid_ = fid;
-    fnum_ = vm_ptr_->GetFragmentNum();
+    fnum_ = vm_ptr_->GetFragmentNum(); //hank get the number of partitions
     calcFidBitWidth(fnum_, id_mask_, fid_offset_);
 
     ivnum_ = vm_ptr_->GetInnerVertexSize(fid);

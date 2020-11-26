@@ -75,7 +75,7 @@ void Init() {
   InitMPIComm();
   CommSpec comm_spec;
   comm_spec.Init(MPI_COMM_WORLD);
-  if (comm_spec.worker_id() == kCoordinatorRank) {
+  if (comm_spec.worker_id() == kCoordinatorRank) {   //hank number 0 id worker is set as the coordinator, id is the rank
     VLOG(1) << "Workers of libgrape-lite initialized.";
   }
 }
@@ -99,19 +99,19 @@ void CreateAndQuery(const CommSpec& comm_spec, const std::string efile,
     graph_spec.set_serialize(true, FLAGS_serialization_prefix);
   }
   std::shared_ptr<FRAG_T> fragment;
-  if (FLAGS_segmented_partition) {
+  if (FLAGS_segmented_partition) {//hank, following loadgraph function will load the serialised graph fragment if exists, or load from vfile and efile to construct all the fragments, and return local fragment.
     fragment = LoadGraph<FRAG_T, SegmentedPartitioner<typename FRAG_T::oid_t>>(
         efile, vfile, comm_spec, graph_spec);
   } else {
     fragment = LoadGraph<FRAG_T, HashPartitioner<typename FRAG_T::oid_t>>(
         efile, vfile, comm_spec, graph_spec);
   }
-  auto app = std::make_shared<APP_T>();
+  auto app = std::make_shared<APP_T>();//hank, instantiate the sssp_auto class
   timer_next("load application");
   auto worker = APP_T::CreateWorker(app, fragment);
-  worker->Init(comm_spec, spec);
+  worker->Init(comm_spec, spec);//hank, initialise MPI comunication targets, communicators, edge distributions, etc
   timer_next("run algorithm");
-  worker->Query(std::forward<Args>(args)...);
+  worker->Query(std::forward<Args>(args)...); //hank, invoke peval and inceval
   timer_next("print output");
 
   std::ofstream ostream;
@@ -131,8 +131,8 @@ void Run() {
   comm_spec.Init(MPI_COMM_WORLD);
 
   bool is_coordinator = comm_spec.worker_id() == kCoordinatorRank;
-  timer_start(is_coordinator);
-#ifdef GRANULA
+  timer_start(is_coordinator); //hank, only the koordinator's timer is enabled
+#ifdef GRANULA // hank, it's a performance analysis system for Big Data platforms that focuses on graph processing
   std::string job_id = FLAGS_jobid;
   granula::startMonitorProcess(getpid());
   granula::operation grapeJob("grape", "Id.Unique", "Job", "Id.Unique");
@@ -157,22 +157,22 @@ void Run() {
   // FIXME: no barrier apps. more manager? or use a dynamic-cast.
   std::string efile = FLAGS_efile;
   std::string vfile = FLAGS_vfile;
-  std::string out_prefix = FLAGS_out_prefix;
+  std::string out_prefix = FLAGS_out_prefix; //hank the output directory 
   auto spec = DefaultParallelEngineSpec();
   if (FLAGS_app_concurrency != -1) {
-    spec.thread_num = FLAGS_app_concurrency;
+    spec.thread_num = FLAGS_app_concurrency;  //hank set the thread num to user defined number in command line parameter
   } else {
     spec = MultiProcessSpec(comm_spec, false);
   }
-  int fnum = comm_spec.fnum();
+  int fnum = comm_spec.fnum(); //hank get number of partitions(fragment)
   std::string name = FLAGS_application;
   if (name.find("sssp") != std::string::npos) {
-    using GraphType = ImmutableEdgecutFragment<OID_T, VID_T, VDATA_T, double>;
-    if (name == "sssp_auto") {
+    using GraphType = ImmutableEdgecutFragment<OID_T, VID_T, VDATA_T, double>;//hank this is a edgecut partition
+    if (name == "sssp_auto") {   //hank, this is a version that automatically send inter-partition message.
       using AppType = SSSPAuto<GraphType>;
       CreateAndQuery<GraphType, AppType, OID_T>(
           comm_spec, efile, vfile, out_prefix, fnum, spec, FLAGS_sssp_source);
-    } else if (name == "sssp") {
+    } else if (name == "sssp") {// hank, this is a version send message by self
       using AppType = SSSP<GraphType>;
       CreateAndQuery<GraphType, AppType, OID_T>(
           comm_spec, efile, vfile, out_prefix, fnum, spec, FLAGS_sssp_source);

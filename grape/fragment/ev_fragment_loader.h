@@ -117,15 +117,15 @@ class EVFragmentLoader {
                                            const std::string& vfile,
                                            const LoadGraphSpec& spec) {
     std::shared_ptr<fragment_t> fragment(nullptr);
-    if (spec.deserialize && (!spec.serialize)) {
+    if (spec.deserialize && (!spec.serialize)) {//hank, first check if the fragment of this worker is already generated and saved after serialisation
       bool deserialized = basic_fragment_loader_.DeserializeFragment(
-          fragment, spec.deserialization_prefix);
+          fragment, spec.deserialization_prefix);//hank, read the serialised fragment and deserialise it.
       int flag = 0;
       int sum = 0;
       if (!deserialized) {
         flag = 1;
       }
-      MPI_Allreduce(&flag, &sum, 1, MPI_INT, MPI_SUM, comm_spec_.comm());
+      MPI_Allreduce(&flag, &sum, 1, MPI_INT, MPI_SUM, comm_spec_.comm()); // hank, broadcast to world_com "0", and sumup all the number received. if any one of the worker flag is not zero, the sum will be greater than 0,then the deserialisation fails
       if (sum != 0) {
         fragment.reset();
         if (comm_spec_.worker_id() == 0) {
@@ -138,15 +138,15 @@ class EVFragmentLoader {
     }
 
     std::vector<oid_t> id_list;
-    std::vector<vdata_t> vdata_list;
+    std::vector<vdata_t> vdata_list; //hank, following code partition the graph files into fnum_'s fragments the fnum_ is assigned as the worker number of comm_spec in comm_spec.h
     {
-      auto io_adaptor = std::unique_ptr<IOADAPTOR_T>(new IOADAPTOR_T(vfile));
+      auto io_adaptor = std::unique_ptr<IOADAPTOR_T>(new IOADAPTOR_T(vfile)); 
       io_adaptor->Open();
       std::string line;
       vdata_t v_data;
       oid_t vertex_id;
       size_t line_no = 0;
-      while (io_adaptor->ReadLine(line)) {
+      while (io_adaptor->ReadLine(line)) {// hank, this function only read the worker's part of lines instead of the whole vfile;
         ++line_no;
         if (line_no % 1000000 == 0) {
           VLOG(10) << "[worker-" << comm_spec_.worker_id() << "][vfile] "
@@ -160,24 +160,24 @@ class EVFragmentLoader {
           VLOG(1) << e.what();
           continue;
         }
-        id_list.push_back(vertex_id);
-        vdata_list.push_back(v_data);
+        id_list.push_back(vertex_id);//hank, import the vid
+        vdata_list.push_back(v_data);//hank, import the vertex data
       }
       io_adaptor->Close();
     }
 
-    partitioner_t partitioner(comm_spec_.fnum(), id_list);
+    partitioner_t partitioner(comm_spec_.fnum(), id_list); //hank, instantiate partitioner in SSSP_auto, it's SegmentedPartitioner. set the partition quantity as fnum_
 
     basic_fragment_loader_.SetPartitioner(std::move(partitioner));
     basic_fragment_loader_.SetRebalance(spec.rebalance,
                                         spec.rebalance_vertex_factor);
 
-    basic_fragment_loader_.Start();
+    basic_fragment_loader_.Start();//hank, get ready to receive the partitioned vertex and edge from workers from MPI.
 
     {
       size_t vnum = id_list.size();
       for (size_t i = 0; i < vnum; ++i) {
-        basic_fragment_loader_.AddVertex(id_list[i], vdata_list[i]);
+        basic_fragment_loader_.AddVertex(id_list[i], vdata_list[i]); //hank, this function will eventually send the vid & vdata to the corresponding woker and be saved in each worker as the partition result.
       }
     }
 
@@ -220,7 +220,7 @@ class EVFragmentLoader {
     VLOG(1) << "[worker-" << comm_spec_.worker_id()
             << "] finished add vertices and edges";
 
-    basic_fragment_loader_.ConstructFragment(fragment);
+    basic_fragment_loader_.ConstructFragment(fragment);  // hank, finish construct local graph fragment;
 
     if (spec.serialize) {
       bool serialized = basic_fragment_loader_.SerializeFragment(

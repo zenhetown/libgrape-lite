@@ -197,7 +197,7 @@ class VertexArray : public Array<T, Allocator<T>> {
  public:
   VertexArray() : Base(), fake_start_(NULL) {}
   explicit VertexArray(const VertexRange<VID_T>& range)
-      : Base(range.size()), range_(range) {
+      : Base(range.size()), range_(range) {//hank,allocate range.size() array
     fake_start_ = Base::data() - range_.begin().GetValue();
   }
   VertexArray(const VertexRange<VID_T>& range, const T& value)

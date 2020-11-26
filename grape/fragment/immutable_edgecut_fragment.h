@@ -55,7 +55,7 @@ class OutArchive;
  * @tparam EDATA_T Type of data on edges.
  * @tparam LoadStrategy The strategy to store adjacency information, default is
  * only_out.
- *
+ *  
  * With an edgecut partition, each vertex is assigned to a fragment.
  * In a fragment, inner vertices are those vertices assigned to it, and the
  * outer vertices are the remaining vertices adjacent to some of the inner
@@ -92,7 +92,8 @@ class OutArchive;
  * Also, the sets of inner vertices, outer vertices and all vertices are ranges
  * of local ID.
  *
- */
+ *///hank edge cut, these are important messages of edge cut.
+
 template <typename OID_T, typename VID_T, typename VDATA_T, typename EDATA_T,
           LoadStrategy _load_strategy = LoadStrategy::kOnlyOut>
 class ImmutableEdgecutFragment
@@ -478,7 +479,7 @@ class ImmutableEdgecutFragment
   void Deserialize(const std::string& prefix, const fid_t fid) {
     char fbuf[1024];
     snprintf(fbuf, sizeof(fbuf), kSerializationFilenameFormat, prefix.c_str(),
-             fid);
+             fid); //hank, construct the fragments filename of the fragmentid fid.
     auto io_adaptor =
         std::unique_ptr<IOADAPTOR_T>(new IOADAPTOR_T(std::string(fbuf)));
     io_adaptor->Open();
@@ -587,7 +588,7 @@ class ImmutableEdgecutFragment
     if (strategy == MessageStrategy::kAlongEdgeToOuterVertex ||
         strategy == MessageStrategy::kAlongIncomingEdgeToOuterVertex ||
         strategy == MessageStrategy::kAlongOutgoingEdgeToOuterVertex) {
-      initMessageDestination(strategy);
+      initMessageDestination(strategy); //hank, find out when one vertex changes, which outer fragments need to be sent message.
     }
 
     if (need_split_edges) {
@@ -1121,7 +1122,7 @@ class ImmutableEdgecutFragment
 
   void initDestFidList(bool in_edge, bool out_edge,
                        Array<fid_t, Allocator<fid_t>>& fid_list,
-                       Array<fid_t*, Allocator<fid_t*>>& fid_list_offset) {
+                       Array<fid_t*, Allocator<fid_t*>>& fid_list_offset) {//record which are the fragments each of the local vertex needs to send message
     if (!fid_list_offset.empty()) {
       return;
     }
@@ -1134,9 +1135,9 @@ class ImmutableEdgecutFragment
       if (in_edge) {
         nbr_t* ptr = ieoffset_[i];
         while (ptr != ieoffset_[i + 1]) {
-          VID_T lid = ptr->neighbor.GetValue();
+          VID_T lid = ptr->neighbor.GetValue();//hank, get the incoming edge source local vid, if it's greater than vnum(the local quantity of vertice) then it's a incoming one
           if (lid >= ivnum_) {
-            fid_t f = (ovgid_[lid - ivnum_] >> fid_offset_);
+            fid_t f = (ovgid_[lid - ivnum_] >> fid_offset_);//hank, the highest (sizeof(T_vid)-fid_offset_) bits of a vid are fid
             dstset.insert(f);
           }
           ++ptr;
@@ -1166,7 +1167,7 @@ class ImmutableEdgecutFragment
     fid_list_offset[0] = fid_list.data();
     for (VID_T i = 0; i < ivnum_; ++i) {
       fid_list_offset[i + 1] = fid_list_offset[i] + id_num[i];
-    }
+    }//hank, above codes record all the dest fragments each local vid need to send message, and the fid_list_offset record the start point of each local vid dest fragment ID. 
   }
 
   void initEdgesSplitter(
@@ -1183,19 +1184,19 @@ class ImmutableEdgecutFragment
     for (VID_T i = 0; i < ivnum_; ++i) {
       frag_count.clear();
       frag_count.resize(fnum_, 0);
-      adj_list_t edges(eoffset[i], eoffset[i + 1]);
+      adj_list_t edges(eoffset[i], eoffset[i + 1]);//hank, eoffset[i] stores the ith's internal vertex's outer neighbors; eoffset[i+1] stores the corresponding edge data;
       for (auto& e : edges) {
         if (e.neighbor.GetValue() >= ivnum_) {
-          fid_t fid = (ovgid_[e.neighbor.GetValue() - ivnum_] >> fid_offset_);
+          fid_t fid = (ovgid_[e.neighbor.GetValue() - ivnum_] >> fid_offset_);//hank, the global ID's highest fid_offset_ left bits is fid; ovgid_ maps the consecutive outer vertex local number into global id
           ++frag_count[fid];
         } else {
-          ++frag_count[fid_];
+          ++frag_count[fid_];//hank, if the value <ivnum_, means there's no outer vertex for this vertex, so the the local frag_count for each edge is added;
         }
       }
-      espliters[0][i] = eoffset[i] + frag_count[fid_];
-      frag_count[fid_] = 0;
+      espliters[0][i] = eoffset[i] + frag_count[fid_];//hank, espliters[j][i]: j is the fid, using 0 stores local fragment edge numbers; 
+      frag_count[fid_] = 0;// hank, this is to avoid adding this again to espliters[fid_]
       for (fid_t j = 0; j < fnum_; ++j) {
-        espliters[j + 1][i] = espliters[j][i] + frag_count[j];
+        espliters[j + 1][i] = espliters[j][i] + frag_count[j];//hank, stores the quantity of ith's vertex's outer edge in fragment j, in to espliters[j][i]
       }
     }
   }
@@ -1221,7 +1222,7 @@ class ImmutableEdgecutFragment
   }
 
   template <typename T>
-  void calcFidBitWidth(fid_t fnum, T& id_mask, int& fid_offset) {
+  void calcFidBitWidth(fid_t fnum, T& id_mask, int& fid_offset) {//hank, if there is 00000011(3) fragments, the fid_offset is 6; the id_mask is 00111111
     fid_t maxfid = fnum - 1;
     if (maxfid == 0) {
       fid_offset = (sizeof(T) * 8) - 1;
@@ -1237,7 +1238,7 @@ class ImmutableEdgecutFragment
   }
 
   std::shared_ptr<vertex_map_t> vm_ptr_;
-  VID_T ivnum_, ovnum_, tvnum_, id_mask_;
+  VID_T ivnum_, ovnum_, tvnum_, id_mask_; //hank, ivnum: internal vertex number within a fragment;ovnum: outer;tvnum_: total vertex; these 3 vnums are consecutive number mapped from global id(gid);ids are consecutive like following: internal(0~ivnum-1), outer:(0,tvnum-ivnum-1);
   size_t ienum_{}, oenum_{};
   int fid_offset_{};
   fid_t fid_{}, fnum_{};

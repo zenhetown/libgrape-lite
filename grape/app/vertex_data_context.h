@@ -25,7 +25,7 @@ template <typename FRAG_T, typename DATA_T>
 class VertexDataContext : public ContextBase {
   using fragment_t = FRAG_T;
   using vertex_t = typename fragment_t::vertex_t;
-  using vertex_array_t = typename fragment_t::template vertex_array_t<DATA_T>;
+  using vertex_array_t = typename fragment_t::template vertex_array_t<DATA_T>;//hank, maps to the immutable_edgecut_fragment's  VertexArray
 
  public:
   using data_t = DATA_T;
@@ -34,7 +34,7 @@ class VertexDataContext : public ContextBase {
                              bool including_outer = false)
       : fragment_(fragment) {
     if (including_outer) {
-      data_.Init(fragment.Vertices());
+      data_.Init(fragment.Vertices());//hank, Initialise data_ with fragment vertices
     } else {
       data_.Init(fragment.InnerVertices());
     }

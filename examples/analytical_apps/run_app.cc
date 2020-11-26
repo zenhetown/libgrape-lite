@@ -34,7 +34,7 @@ int main(int argc, char* argv[]) {
   google::InitGoogleLogging("analytical_apps");
   google::InstallFailureSignalHandler();
 
-  grape::Init();
+  grape::Init(); //hank here check the accordance of input options,and initialise MPI
 
   std::string name = FLAGS_application;
   if (name.find("sssp") != std::string::npos) {

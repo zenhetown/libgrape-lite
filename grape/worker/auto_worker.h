@@ -66,7 +66,7 @@ class AutoWorker {
             const ParallelEngineSpec& pe_spec = DefaultParallelEngineSpec()) {
     auto& graph = const_cast<fragment_t&>(context_->fragment());
     // prepare for the query
-    graph.PrepareToRunApp(APP_T::message_strategy, APP_T::need_split_edges);
+    graph.PrepareToRunApp(APP_T::message_strategy, APP_T::need_split_edges);//hank, get the adjacent fragment for each vertex ready for message sending under message_strategy definition;and the edge distribution in different fragments
 
     comm_spec_ = comm_spec;
     MPI_Barrier(comm_spec_.comm());
@@ -85,7 +85,7 @@ class AutoWorker {
 
     MPI_Barrier(comm_spec_.comm());
 
-    context_->Init(messages_, std::forward<Args>(args)...);
+    context_->Init(messages_, std::forward<Args>(args)...);//hank, context_ is initialised as SSSPAutoContext
 
     int round = 0;
 

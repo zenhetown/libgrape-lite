@@ -39,7 +39,7 @@ class SSSPAutoContext : public VertexDataContext<FRAG_T, double> {
         partial_result(this->data()) {}
 
   void Init(AutoParallelMessageManager<FRAG_T>& messages, oid_t source_id) {
-    auto& frag = this->fragment();
+    auto& frag = this->fragment(); //hank, fragment() is inherited from VertexDataContext, and returns the class construction function's fragment
     auto vertices = frag.Vertices();
 
     this->source_id = source_id;
@@ -51,7 +51,7 @@ class SSSPAutoContext : public VertexDataContext<FRAG_T, double> {
                           } else {
                             return false;
                           }
-                        });
+                        });  //hank, register the aggregator function as the last parameter.
     messages.RegisterSyncBuffer(frag, &partial_result,
                                 MessageStrategy::kSyncOnOuterVertex);
   }
