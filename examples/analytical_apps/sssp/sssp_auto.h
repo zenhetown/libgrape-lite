@@ -97,7 +97,7 @@ class SSSPAuto : public AutoAppBase<FRAG_T, SSSPAutoContext<FRAG_T>> {
    */
   void PEval(const fragment_t& frag, context_t& ctx) {
     vertex_t source;
-    bool native_source = frag.GetInnerVertex(ctx.source_id, source);
+    bool native_source = frag.GetInnerVertex(ctx.source_id, source); //hank, get the starting source vertex, only the fragment with the source starts computation
 
     std::priority_queue<std::pair<double, vertex_t>> heap;
 
@@ -122,7 +122,7 @@ class SSSPAuto : public AutoAppBase<FRAG_T, SSSPAutoContext<FRAG_T>> {
 
     for (auto& v : inner_vertices) {
       if (ctx.partial_result.IsUpdated(v)) {
-        heap.emplace(-ctx.partial_result.GetValue(v), v);
+        heap.emplace(-ctx.partial_result.GetValue(v), v);//hank, put the updated vertice as the starting source, for further computation
       }
     }
 

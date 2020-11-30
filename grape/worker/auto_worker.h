@@ -58,7 +58,7 @@ class AutoWorker {
                 "The loaded graph is not valid for application");
 
   AutoWorker(std::shared_ptr<APP_T> app, std::shared_ptr<fragment_t> graph)
-      : app_(app), context_(std::make_shared<context_t>(*graph)) {}
+      : app_(app), context_(std::make_shared<context_t>(*graph)) {}//hank, initialise the context_ with this fragment
 
   ~AutoWorker() = default;
 
@@ -89,13 +89,13 @@ class AutoWorker {
 
     int round = 0;
 
-    messages_.Start();
+    messages_.Start(); //hank, empty implementation
 
-    messages_.StartARound();
+    messages_.StartARound();//hank, clear all the message sync data structure
 
     app_->PEval(graph, *context_);
 
-    messages_.FinishARound();
+    messages_.FinishARound();//hank, automatically generate sync messages.
 
     if (comm_spec_.worker_id() == kCoordinatorRank) {
       VLOG(1) << "[Coordinator]: Finished PEval";

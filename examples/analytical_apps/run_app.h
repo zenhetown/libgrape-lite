@@ -108,10 +108,10 @@ void CreateAndQuery(const CommSpec& comm_spec, const std::string efile,
   }
   auto app = std::make_shared<APP_T>();//hank, instantiate the sssp_auto class
   timer_next("load application");
-  auto worker = APP_T::CreateWorker(app, fragment);
+  auto worker = APP_T::CreateWorker(app, fragment);//hank, in this case, initialise auto_worker.h
   worker->Init(comm_spec, spec);//hank, initialise MPI comunication targets, communicators, edge distributions, etc
   timer_next("run algorithm");
-  worker->Query(std::forward<Args>(args)...); //hank, invoke peval and inceval
+  worker->Query(std::forward<Args>(args)...); //hank, invoke peval and inceval, implemented in auto_worker.cc in this sssp_auto example
   timer_next("print output");
 
   std::ofstream ostream;

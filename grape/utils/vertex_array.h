@@ -18,7 +18,7 @@ limitations under the License.
 
 #include <algorithm>
 #include <utility>
-
+#include <iostream>
 #include "grape/config.h"
 #include "grape/serialization/in_archive.h"
 #include "grape/serialization/out_archive.h"
@@ -211,7 +211,7 @@ class VertexArray : public Array<T, Allocator<T>> {
     Base::clear();
     Base::resize(range.size());
     range_ = range;
-    fake_start_ = Base::data() - range_.begin().GetValue();
+    fake_start_ = Base::data() - range_.begin().GetValue();//hank, this is for the easiness of access Base. fake_start_[range_.begin().GetValue] = Base::data();
   }
 
   void Init(const VertexRange<VID_T>& range, const T& value) {
@@ -231,10 +231,13 @@ class VertexArray : public Array<T, Allocator<T>> {
     std::fill_n(Base::data(), Base::size(), value);
   }
 
-  inline T& operator[](const Vertex<VID_T>& loc) {
+  inline T& operator[](const Vertex<VID_T>& loc) {//hank, this overide the [] for vertex_array only
+    // std::cout<<"fake start is called";
     return fake_start_[loc.GetValue()];
+    
   }
   inline const T& operator[](const Vertex<VID_T>& loc) const {
+    // std::cout<<"fake start is called";
     return fake_start_[loc.GetValue()];
   }
 

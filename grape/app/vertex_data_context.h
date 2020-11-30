@@ -34,7 +34,7 @@ class VertexDataContext : public ContextBase {
                              bool including_outer = false)
       : fragment_(fragment) {
     if (including_outer) {
-      data_.Init(fragment.Vertices());//hank, Initialise data_ with fragment vertices
+      data_.Init(fragment.Vertices());//hank, Initialise data_ with fragment vertices, VertexArray::Init
     } else {
       data_.Init(fragment.InnerVertices());
     }

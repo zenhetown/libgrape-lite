@@ -20,7 +20,7 @@
 
 #ifndef GRAPE_UTILS_GCONTAINER_H_
 #define GRAPE_UTILS_GCONTAINER_H_
-
+#include <iostream>
 #include <cstring>
 #include <memory>
 #include <type_traits>
@@ -325,7 +325,7 @@ class Array {
       pointer __old_end = this->__base.__end_;
       __vallocate(__new_size);
       __construct_at_end(__old_begin, __old_end, __old_size);
-      __construct_at_end(__new_size - __old_size, __x);
+      __construct_at_end(__new_size - __old_size, __x);//hank, set the additional elements' value to __x
 
       __destruct_at_end(__old_begin, __old_end);
       __vdeallocate(__old_begin, __old_size);
@@ -335,6 +335,7 @@ class Array {
   bool empty() const noexcept { return this->__base.empty(); }
 
   reference operator[](size_type __n) noexcept {
+    // std::cout<<"father [] is called";
     return *(this->__base.__begin_ + __n);
   }
 

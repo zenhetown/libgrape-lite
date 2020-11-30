@@ -53,7 +53,7 @@ class SSSPAutoContext : public VertexDataContext<FRAG_T, double> {
                           }
                         });  //hank, register the aggregator function as the last parameter.
     messages.RegisterSyncBuffer(frag, &partial_result,
-                                MessageStrategy::kSyncOnOuterVertex);
+                                MessageStrategy::kSyncOnOuterVertex);//hank, register the message sync strategy and sync buffer. the buffer is set as partial_result, the class menbers are operations on vertex data, update data,etc
   }
 
   void Output(std::ostream& os) override {

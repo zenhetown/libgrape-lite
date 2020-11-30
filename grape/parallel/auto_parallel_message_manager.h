@@ -80,7 +80,7 @@ class AutoParallelMessageManager : public DefaultMessageManager {
    */
   void FinishARound() override {
     generateAutoMessages();
-    Base::FinishARound();
+    Base::FinishARound();//hank, simply do the message sending and receiving to/fro different fragments
   }
 
   using Base::ToTerminate;
@@ -100,7 +100,7 @@ class AutoParallelMessageManager : public DefaultMessageManager {
    */
   inline void RegisterSyncBuffer(const FRAG_T& frag, ISyncBuffer* buffer,
                                  MessageStrategy strategy) {
-    int event_id = auto_parallel_events_.size();
+    int event_id = auto_parallel_events_.size();  //hank, set the current auto_parallel_events size as the id of this events handler
     auto_parallel_events_.emplace_back(frag, buffer, strategy, event_id);
   }
 
@@ -154,7 +154,7 @@ class AutoParallelMessageManager : public DefaultMessageManager {
       ap_event* event = &event_ref;
       auto& i_ec_frag = event->fragment;
       auto inner_size = i_ec_frag.InnerVertices().size();
-      if (event->buffer->updated(0, inner_size)) {
+      if (event->buffer->updated(0, inner_size)) {//hank, find out 0 to inner_size vertices if any one of them changed.
         ForceContinue();
         break;
       }
@@ -164,7 +164,7 @@ class AutoParallelMessageManager : public DefaultMessageManager {
       ap_event* event = &event_ref;
 
       auto& i_ec_frag = event->fragment;
-      if (event->message_strategy == MessageStrategy::kSyncOnOuterVertex) {
+      if (event->message_strategy == MessageStrategy::kSyncOnOuterVertex) {//hank, in sssp_auto, the strategy is this line 
         if (event->buffer->GetTypeId() == typeid(double)) {
           syncOnOuterVertexSend<double>(i_ec_frag, event->buffer,
                                         event->event_id);
