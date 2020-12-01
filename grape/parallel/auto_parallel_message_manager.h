@@ -79,7 +79,7 @@ class AutoParallelMessageManager : public DefaultMessageManager {
    * @brief Inherit
    */
   void FinishARound() override {
-    generateAutoMessages();
+    generateAutoMessages();//hank, generate the messages that is to send from this frag to all the other frags
     Base::FinishARound();//hank, simply do the message sending and receiving to/fro different fragments
   }
 
@@ -100,7 +100,7 @@ class AutoParallelMessageManager : public DefaultMessageManager {
    */
   inline void RegisterSyncBuffer(const FRAG_T& frag, ISyncBuffer* buffer,
                                  MessageStrategy strategy) {
-    int event_id = auto_parallel_events_.size();  //hank, set the current auto_parallel_events size as the id of this events handler
+    int event_id = auto_parallel_events_.size();  //hank, set the current auto_parallel_events size as the id of this events handler. each event has an individual id, in sssp_auto, only 1 event; however in local clustering coefficient(LCC), there are 3 different events.
     auto_parallel_events_.emplace_back(frag, buffer, strategy, event_id);
   }
 
@@ -116,7 +116,7 @@ class AutoParallelMessageManager : public DefaultMessageManager {
       ap_event* event = event_map.at(event_id);
 
       auto& i_ec_frag = event->fragment;
-      if (event->message_strategy == MessageStrategy::kSyncOnOuterVertex ||
+      if (event->message_strategy == MessageStrategy::kSyncOnOuterVertex ||  //hank, in sssp_auto, the strategy is kSyncOnOuterVertex
           event->message_strategy == MessageStrategy::kAlongEdgeToOuterVertex ||
           event->message_strategy ==
               MessageStrategy::kAlongOutgoingEdgeToOuterVertex ||
@@ -154,7 +154,7 @@ class AutoParallelMessageManager : public DefaultMessageManager {
       ap_event* event = &event_ref;
       auto& i_ec_frag = event->fragment;
       auto inner_size = i_ec_frag.InnerVertices().size();
-      if (event->buffer->updated(0, inner_size)) {//hank, find out 0 to inner_size vertices if any one of them changed.
+      if (event->buffer->updated(0, inner_size)) {//hank, find out 0 to inner_size vertices if any one of them changed. buffer is RegisterSyncBuffer's parameter partial_result
         ForceContinue();
         break;
       }
@@ -331,7 +331,7 @@ class AutoParallelMessageManager : public DefaultMessageManager {
 
     for (auto v : outer_vertices) {
       if (bptr->IsUpdated(v)) {
-        Base::SyncStateOnOuterVertex(frag, v, bptr->GetValue(v));
+        Base::SyncStateOnOuterVertex(frag, v, bptr->GetValue(v));//hank, put the events to each other frags to_send_ buffer
         bptr->Reset(v);
       }
     }

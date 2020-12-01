@@ -764,7 +764,7 @@ class ImmutableEdgecutFragment
     }
   }
 
-  inline VID_T GetOuterVertexGid(const vertex_t& v) const override {
+  inline VID_T GetOuterVertexGid(const vertex_t& v) const override { //hank, map this frag's local outer node id to global node id
     return ovgid_[v.GetValue() - ivnum_];
   }
   inline VID_T GetInnerVertexGid(const vertex_t& v) const override {

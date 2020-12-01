@@ -91,7 +91,7 @@ class AutoWorker {
 
     messages_.Start(); //hank, empty implementation
 
-    messages_.StartARound();//hank, clear all the message sync data structure
+    messages_.StartARound();//hank, clear all the message sync data structure, reset the cur_ pointer to 0, and GetMessage will get each frag's message one by one
 
     app_->PEval(graph, *context_);
 

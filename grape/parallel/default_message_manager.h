@@ -86,15 +86,15 @@ class DefaultMessageManager : public MessageManagerBase {
   /**
    * @brief Inherit
    */
-  void FinishARound() override {
-    to_terminate_ = syncLengths();
+  void FinishARound() override {  //hank, invoke MPI_Irecv start non-block receiving on buffer, and invoke MPI_Isend to send all the 
+    to_terminate_ = syncLengths();//hank, get the to_send_ buffer sizes, and sync to each other frag, to form a matrice of lengths_in_ lengths
     if (to_terminate_) {
       return;
     }
 
     for (fid_t i = 1; i < fnum_; ++i) {
       fid_t src_fid = (fid_ + i) % fnum_;
-      size_t length = lengths_in_[src_fid * fnum_ + fid_];
+      size_t length = lengths_in_[src_fid * fnum_ + fid_];//hank, lengths_in_[0][5] means frag 0 send to frag 5's size. so "src_fid*fnum_ + fid_" means the size of message that src_fid sent to me. 
       if (length == 0) {
         continue;
       }
@@ -103,7 +103,7 @@ class DefaultMessageManager : public MessageManagerBase {
       arc.Allocate(length);
       MPI_Request req;
       MPI_Irecv(arc.GetBuffer(), length, MPI_CHAR,
-                comm_spec_.FragToWorker(src_fid), 0, comm_, &req);
+                comm_spec_.FragToWorker(src_fid), 0, comm_, &req); //hank, receive all the messages sent from other frags
       reqs_.push_back(req);
     }
 
@@ -115,10 +115,10 @@ class DefaultMessageManager : public MessageManagerBase {
       }
       MPI_Request req;
       MPI_Isend(arc.GetBuffer(), arc.GetSize(), MPI_CHAR,
-                comm_spec_.FragToWorker(dst_fid), 0, comm_, &req);
+                comm_spec_.FragToWorker(dst_fid), 0, comm_, &req);//hank, send all the messages to corresbonding  other frags
       reqs_.push_back(req);
     }
-    to_recv_[fid_].Clear();
+    to_recv_[fid_].Clear();//hank, following 3 lines, no need to receive from MPI the messages that is from self, just move the sending buffer to the receiving buffer.
     if (!to_send_[fid_].Empty()) {
       to_recv_[fid_] = std::move(to_send_[fid_]);
     }
@@ -232,7 +232,7 @@ class DefaultMessageManager : public MessageManagerBase {
    * @tparam MESSAGE_T
    * @param frag
    * @param v: a
-   * @param msg
+   * @param msgStartARound
    */
   template <typename GRAPH_T, typename MESSAGE_T>
   inline void SendMsgThroughOEdges(const GRAPH_T& frag,
@@ -335,16 +335,16 @@ class DefaultMessageManager : public MessageManagerBase {
     int terminate_flag_sum;
     MPI_Allreduce(&terminate_flag, &terminate_flag_sum, 1, MPI_INT, MPI_SUM,
                   comm_);
-    if (terminate_flag_sum > 0) {
+    if (terminate_flag_sum > 0) {//hank, if any one of the frag is forced terminated, the process is terminated.
       terminate_info_.success = false;
       AllToAll(terminate_info_.info, comm_);
       return true;
     } else {
       MPI_Allgather(&lengths_out_[0], fnum_ * sizeof(size_t), MPI_CHAR,
-                    &lengths_in_[0], fnum_ * sizeof(size_t), MPI_CHAR, comm_);
+                    &lengths_in_[0], fnum_ * sizeof(size_t), MPI_CHAR, comm_);//hank, each frag send out lengths_out_[0...fnum] and recv all the others' lengths_out_ as self's lengths_in_
       for (auto s : lengths_in_) {
         if (s != 0) {
-          return false;
+          return false;// hank, return false means about to terminate
         }
       }
       return true;
